@@ -57,7 +57,6 @@ class Memory:
 class ParentCode:
     pass
 
-
 class Executor:
     def __init__(self):
         self._code = ""
@@ -218,6 +217,13 @@ class Executor:
         yield ""
 
     @ns
+    def isub(self, to: Pointer, _from: Pointer):
+        with self.cycle(_from):
+            self.add(_from, -1)
+            self.add(to, -1)
+        yield ""
+
+    @ns
     def move2(self, to1: Pointer, to2: Pointer, _from: Pointer):
         with self.cycle(_from):
             self.add(_from, -1),
@@ -262,7 +268,7 @@ class Executor:
         false_cond = self.ns.reg()
         self.set(false_cond, 1)
 
-        with self.cycle(cond):
+        with self.iff(cond):
             self.set(false_cond, 0)
 
         with self.cycle(false_cond):
@@ -324,7 +330,7 @@ class Executor:
                         self.copy(_b, b)
                         self.add(d, 1)
 
-                self.copy(m, _a)
+                self.copy(m, _b)
 
         yield ""
 
@@ -366,22 +372,25 @@ class Executor:
         print('.')
 
 
+print("_Ladd")
 
 e = Executor()
 e._Ladd(4)
 e.test_code("++++")
 
+print("Cycle")
 e = Executor()
 a = e.global_var()
 with e.cycle(a):
     e.add(a, -1)
 e.test_code("[-]")
 
+print("printStr")
 e = Executor()
 e.printStr("Hello!")
 e.test_out("Hello!", None)
 
-
+print("set+copy")
 e = Executor()
 a = e.global_var()
 b = e.global_var()
@@ -390,7 +399,7 @@ e.set(a, 10)
 e.copy(b, a)
 e.test_out(None, [10, 10])
 
-
+print("sum")
 e = Executor()
 a = e.global_var()
 b = e.global_var()
@@ -404,6 +413,43 @@ print(e.optimised)
 e.test_out(None, [10, 20, 30])
 
 
+print("iff")
+e = Executor()
+a = e.global_var()
+b = e.global_var()
+c = e.global_var()
+
+e.set(a, 10)
+
+with e.iff(a):
+    e.set(c, 20)
+
+with e.iff(b):
+    e.set(c, 10)
+
+print(e.optimised)
+e.test_out(None, [10, 0, 20])
+
+
+print("ifzero")
+e = Executor()
+a = e.global_var()
+b = e.global_var()
+c = e.global_var()
+
+e.set(a, 10)
+
+with e.ifzero(a):
+    e.set(c, 20)
+
+with e.ifzero(b):
+    e.set(c, 10)
+
+print(e.optimised)
+e.test_out(None, [10, 0, 10])
+
+
+print("mul")
 e = Executor()
 h = e.global_var()
 l = e.global_var()
@@ -413,11 +459,12 @@ b = e.global_var()
 e.set(a, 25)
 e.set(b, 20)
 
-e.div(h, l, a, b)
+e.mul(h, l, a, b)
 print(e.optimised)
 e.test_out(None, [1, 244, 25, 20])
 
 
+print("div")
 e = Executor()
 d = e.global_var()
 m = e.global_var()
@@ -429,5 +476,5 @@ e.set(b, 10)
 
 e.div(d, m, a, b)
 print(e.optimised)
-e.test_out(None, [2, 5, 25, 15])
+e.test_out(None, [2, 5, 25, 10])
 
